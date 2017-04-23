@@ -38,9 +38,7 @@ class ArticlesController extends Controller
     {
       // $article = new Article($request->all());
       // \Auth::user()->articles()->save($article);
-      $article = \Auth::user()->articles()->create($request->all());
-
-      $article->tags()->attach($request->input('tag_list'));
+      $this->createArticle($request);
 
       \Session::flash('flash_message', 'Your article has been created');
 
@@ -59,11 +57,25 @@ class ArticlesController extends Controller
       return view('articles.edit', compact('article', 'tags', 'tagList'));
     }
 
-    public function update(ArticleRequest $request, $id)
+    public function update(ArticleRequest $request, Article $article)
     {
-      $article = Article::findOrFail($id);
       $article->update($request->all());
+      $this->syncTags($article, $request->input('tag_list'));
 
       return redirect('articles');
+    }
+
+    private function syncTags(Article $article, array $tags)
+    {
+      $article->tags()->sync($tags);
+    }
+
+    private function createArticle(ArticleRequest $request)
+    {
+      $article = \Auth::user()->articles()->create($request->all());
+
+      $this->syncTags($article, $request->input('tag_list'));
+
+      return $article;
     }
 }
